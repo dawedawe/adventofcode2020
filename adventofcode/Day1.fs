@@ -21,3 +21,23 @@ module Day1 =
                      |> Array.map int
                      |> findEntries
         n1 * n2
+
+    let findEntriesPart2 (entries : int []) =
+        let l = entries.Length
+        let mutable r = None
+        for i in 0 .. l - 3 do
+            for j in (i + 1) .. l - 2 do
+                for k in (j + 1) .. l - 1 do
+                    let sum = entries.[i] + entries.[j] + entries.[k]
+                    if sum = 2020
+                    then r <- Some (entries.[i], entries.[j], entries.[k])
+        if (Option.isNone r)
+        then failwith "no triple found"
+        r.Value
+
+    let day1Part2 () =
+        let a, b, c = System.IO.File.ReadAllLines InputFile
+                      |> Array.map int
+                      |> findEntriesPart2
+        a * b * c
+        
