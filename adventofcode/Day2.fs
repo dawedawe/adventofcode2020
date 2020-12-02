@@ -26,3 +26,15 @@ module Day2 =
         |> Array.filter isValid
         |> Array.length
         
+    let isValidPart2 s =
+        let (pos1, pos2, c, word) = parseLine s
+        let charArray = word.ToCharArray()
+        let pos1ContainsC = if charArray.[pos1 - 1] = c then 1 else 0
+        let pos2ContainsC = if charArray.[pos2 - 1] = c then 1 else 0
+        (pos1ContainsC ^^^ pos2ContainsC) = 1
+
+    let day2Part2 () =
+        System.IO.File.ReadAllLines InputFile
+        |> Array.filter isValidPart2
+        |> Array.length
+        
