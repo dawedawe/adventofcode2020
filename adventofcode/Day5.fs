@@ -26,3 +26,13 @@ module Day5 =
         System.IO.File.ReadAllLines InputFile
         |> Array.map calculateSeatId
         |> Array.max
+
+    let day5Part2 () =
+        let seatIds = System.IO.File.ReadAllLines InputFile
+                      |> Array.map calculateSeatId
+                      |> Array.sort
+        let min, max = seatIds.[0], Array.last seatIds
+        seq [min .. max]
+        |> Seq.filter (fun id -> not (Array.contains id seatIds))
+        |> Seq.head
+        
