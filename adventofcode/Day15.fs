@@ -35,3 +35,37 @@ module Day15 =
 
         let numbers = init startingNumbers
         cycle numbers
+
+    let addPosAndNumber (numbers: Map<int, int list>) p n =
+        if Map.containsKey n numbers then
+            let lastPos = List.last numbers.[n]
+            let newPos = [ lastPos; p ]
+            Map.add n newPos numbers
+        else
+            Map.add n [ p ] numbers
+
+    let initPart2 (numbers: int list) =
+        let posValuePairs = List.zip [ 1 .. numbers.Length ] numbers
+        List.fold (fun m (p, v) -> addPosAndNumber m p v) Map.empty posValuePairs
+
+    let rec cyclePart2 (numbers: Map<int, int list>) (lastSaid: int) =
+        let positionsOfLastSaid = numbers.[lastSaid]
+        let lastPos = List.last positionsOfLastSaid
+        let newPos = lastPos + 1
+        let firstTime = positionsOfLastSaid.Length = 1
+        let newNumber = if firstTime then 0 else positionsOfLastSaid.[1] - positionsOfLastSaid.[0]
+        if newPos = 30000000 then
+            newNumber
+        else
+            let numbers' = addPosAndNumber numbers newPos newNumber
+            cyclePart2 numbers' newNumber
+
+    let day15Part2() =
+        let startingNumbers =
+            System.IO.File.ReadAllText InputFile
+            |> fun s -> s.Split(",")
+            |> Array.map int
+            |> List.ofArray
+
+        let numbers = initPart2 startingNumbers
+        cyclePart2 numbers (List.last startingNumbers)
