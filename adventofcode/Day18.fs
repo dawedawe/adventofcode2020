@@ -63,27 +63,53 @@ module Day18 =
         | (X x1) :: op :: (X x2) :: rest ->
             let f = if op = Plus then (+) else (*)
             let result = f x1 x2
-            evalTokens ([ X result ] @ tokens.[3..])
+            evalTokens ([ X result ] @ rest)
         | [ X x ] -> X x
         | _ -> failwith "bad state"
 
-    let evaluateStacks (evalStack: Stack<Token>) (parseStack: Stack<Token>) =
+    let rec evalTokensPart2 (tokens: Token list) =
+        let i = List.tryFindIndex ((=) Plus) tokens
+        if Option.isSome i then
+            match (tokens.[i.Value - 1], tokens.[i.Value], tokens.[i.Value + 1]) with
+            | (X x1, Plus, X x2) ->
+                let r = x1 + x2
+
+                let tokens' =
+                    if i.Value > 1 then
+                        tokens.[0..i.Value - 2]
+                        @ [ X r ]
+                        @ tokens.[i.Value + 2..]
+                    else
+                        [ X r ] @ tokens.[i.Value + 2..]
+
+                evalTokensPart2 tokens'
+            | _ -> failwith "bad state"
+        else
+            match tokens with
+            | (X x1) :: Mul :: (X x2) :: rest ->
+                let result = x1 * x2
+                evalTokensPart2 ([ X result ] @ rest)
+            | [ X x ] -> X x
+            | _ -> failwith "bad state"
+
+    let evaluateStacks evalTokensFunc (evalStack: Stack<Token>) (parseStack: Stack<Token>) =
         let tokens =
             if parseStack.Peek() = RightBracket then popBracketContent parseStack else popWholeStack parseStack
 
-        let result = evalTokens tokens
+        let result = evalTokensFunc tokens
         if parseStack.Count > 0 then parseStack.Push(result) else evalStack.Push(result)
 
-    let evaluateStack (evalStack: Stack<Token>) = popWholeStack evalStack |> evalTokens
+    let evaluateStack evalTokensFunc (evalStack: Stack<Token>) =
+        popWholeStack evalStack |> evalTokensFunc
 
-    let eval (tokens: Token list) =
+    let eval evalTokensFunc (tokens: Token list) =
         let evalStack = Stack<Token>()
         let parseStack = Stack<Token>()
 
         let rec evalHelper rest =
             match rest with
             | [] when parseStack.Count = 0 ->
-                match (evaluateStack evalStack) with
+                match (evaluateStack evalTokensFunc evalStack) with
                 | X x -> x
                 | _ -> failwith "bad state"
             | (X x) :: r ->
@@ -101,7 +127,7 @@ module Day18 =
                 evalHelper r
             | RightBracket :: r ->
                 parseStack.Push(RightBracket)
-                evaluateStacks evalStack parseStack
+                evaluateStacks evalTokensFunc evalStack parseStack
                 evalHelper r
             | _ -> failwith "bad state"
 
@@ -110,4 +136,9 @@ module Day18 =
     let day18 () =
         System.IO.File.ReadAllLines InputFile
         |> Array.map parse
-        |> Array.sumBy eval
+        |> Array.sumBy (eval evalTokens)
+
+    let day18Part2 () =
+        System.IO.File.ReadAllLines InputFile
+        |> Array.map parse
+        |> Array.sumBy (eval evalTokensPart2)
