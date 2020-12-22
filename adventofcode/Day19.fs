@@ -84,3 +84,32 @@ module Day19 =
 
         let expandedRule = expand rules
         count expandedRule messages
+
+    let parseRuleExpressionPart2 (s: string) =
+        let colonIndex = s.IndexOf(":")
+        let id = Int32.Parse(s.Substring(0, colonIndex))
+
+        let options =
+            if id = 8 then
+                "( 42 | 42+ )"
+            else if id = 11 then
+                "( 42 31 | 42 42 31 31 | 42 42 42 31 31 31 | 42 42 42 42 31 31 31 31 | 42 42 42 42 42 31 31 31 31 31 | 42 42 42 42 42 42 31 31 31 31 31 31 | 42 42 42 42 42 42 42 31 31 31 31 31 31 31 | 42 42 42 42 42 42 42 42 31 31 31 31 31 31 31 31 | 42 42 42 42 42 42 42 42 42 31 31 31 31 31 31 31 31 31 )"
+            else
+                "( " + s.[colonIndex + 2..] + " )"
+
+        RuleExpression { Id = id; SubRules = options }
+
+    let parsePart2 (line: string) =
+        if line.Contains('"') then parseTermRule line else parseRuleExpressionPart2 line
+
+    let day19Part2 () =
+        let lines = System.IO.File.ReadAllLines InputFile
+        let ruleLines = Array.takeWhile ((<>) "") lines
+        let messages = lines.[ruleLines.Length + 1..]
+
+        let rules =
+            Array.map (parsePart2 >> (fun r -> (getRuleId r, r))) ruleLines
+            |> Map.ofArray
+
+        let expandedRule = expand rules
+        count expandedRule messages
