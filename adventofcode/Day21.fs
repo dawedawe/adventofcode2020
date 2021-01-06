@@ -2,6 +2,8 @@ namespace Adventofcode
 
 module Day21 =
 
+    open System.IO
+
     [<Literal>]
     let InputFile = "Day21Input.txt"
 
@@ -118,3 +120,54 @@ module Day21 =
         let baddies = suspiciousIngredients allergensMap
         let goodies = Set.difference allIngredients baddies
         countGoodies goodies lines
+
+    type AllergenPart2 =
+        { Name: string
+          Ingredients: List<string * int> }
+
+    module AllergenPart2 =
+
+        let toAllergenPart2 (allergen: Allergen) =
+            let sortedIngredients =
+                allergen.Ingredients
+                |> Map.toList
+                |> List.sortByDescending snd
+            {
+                Name = allergen.Name
+                Ingredients = sortedIngredients
+            }
+
+    let rec firstObvious (allergens: AllergenPart2 list) =
+        match allergens with
+        | [a] -> a
+        | _ -> allergens
+               |> List.tryFind (fun a -> a.Ingredients.Length > 0 && snd a.Ingredients.[0] <> snd a.Ingredients.[1])
+               |> Option.defaultValue allergens.[0]
+
+    let removeIngredient ingredient (allergens: AllergenPart2 list) =
+        allergens
+        |> List.map (fun a -> { a with Ingredients = List.filter (fun (i, _) -> i <> ingredient) a.Ingredients  } )
+
+    let dangerList (allergensX: AllergenPart2 list) =
+        let rec helper (allergens: AllergenPart2 list) (canonicalList: (string * string) list) =
+            match allergens with
+            | [] -> canonicalList
+            | _ -> let allergen = firstObvious allergens
+                   let ingredient = fst allergen.Ingredients.Head
+                   let canonicalList' = canonicalList @ [(allergen.Name, ingredient)]
+                   let allergens' = allergens
+                                   |> List.filter (fun a -> a.Name <> allergen.Name)
+                                   |> removeIngredient ingredient
+                   helper allergens' canonicalList'
+        helper allergensX List.empty
+
+    let day21Part2 () =
+        let allergens =
+            File.ReadAllLines(InputFile)
+            |> parse
+            |> Map.toList
+            |> List.map (snd >> AllergenPart2.toAllergenPart2)
+        dangerList allergens
+        |> List.sortBy fst
+        |> List.map (fun (_, i) -> i)
+        |> String.concat ","
