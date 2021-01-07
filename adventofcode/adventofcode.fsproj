@@ -4,9 +4,9 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Day21.fs" />
+    <Compile Include="Day22.fs" />
     <Compile Include="Program.fs" />
-    <Content Include="Day21Input.txt">
+    <Content Include="Day22Input.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
