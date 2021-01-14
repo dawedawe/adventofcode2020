@@ -3,64 +3,57 @@ namespace Adventofcode
 module Day23 =
 
     open System
+    open System.Collections.Generic
 
     let input = "364289715"
 
-    let splitCircle (currentIndex: int) (circle: int list) =
-        let takeOut =
-            [ circle.[(currentIndex + 1) % circle.Length]
-              circle.[(currentIndex + 2) % circle.Length]
-              circle.[(currentIndex + 3) % circle.Length] ]
+    let getTakeOut (circle: LinkedList<int>) =
+        let current = circle.First
+        let t1 = current.Next
+        let t2 = t1.Next
+        let t3 = t2.Next
+        [ t1; t2; t3 ]
 
-        let circle' =
-            List.filter (fun i -> not (List.contains i takeOut)) circle
+    let maxWithoutTakeOut (takeOut: int list) (circle: LinkedList<int>) =
+        let mutable max = circle.Count
+        for t in (List.sortDescending takeOut) do
+            if t = max then max <- max - 1
+        max
 
-        (circle', takeOut)
-
-    let findDestination (current: int) (circle: int list) =
-        let destLabel = current - 1
-
-        if List.contains destLabel circle then
+    let findDestination (takeOut: int list) (circle: LinkedList<int>) =
+        let destLabel = circle.First.Value - 1
+        
+        if destLabel > 0 && not (List.contains destLabel takeOut) then
             destLabel
         else
-            let firstAlternatives =
-                seq { (destLabel - 1) .. (-1) .. 1 } |> Seq.toList
+            let firstAlternatives = [(destLabel - 1) .. (-1) .. 1]
+            let firstAlt = List.tryFind (fun a -> not (List.contains a takeOut)) firstAlternatives
+            if Option.isSome firstAlt
+            then firstAlt.Value
+            else maxWithoutTakeOut takeOut circle
 
-            let s =
-                seq {
-                    for a in firstAlternatives do
-                        if List.contains a circle then yield a
-                }
+    let move (circle: LinkedList<int>) =
+        let takeOutNodes = getTakeOut circle
+        let takeOutValues = takeOutNodes |> List.map (fun n -> n.Value)
+        let destination = findDestination takeOutValues circle
+        circle.Remove(takeOutNodes.[0]) |> ignore
+        circle.Remove(takeOutNodes.[1]) |> ignore
+        circle.Remove(takeOutNodes.[2]) |> ignore
+        let destinationNode = circle.Find(destination)
+        let t0Node = circle.AddAfter(destinationNode, takeOutNodes.[0].Value)
+        let t1Node = circle.AddAfter(t0Node, takeOutNodes.[1].Value)
+        circle.AddAfter(t1Node, takeOutNodes.[2].Value) |> ignore
+        let first = circle.First.Value
+        circle.RemoveFirst()
+        circle.AddLast(first) |> ignore
 
-            if not (Seq.isEmpty s) then
-                Seq.head s
-            else
-                List.max circle
-
-    let move (currentIndex: int) (circle: int list) =
-        let (circle', takeOut) = splitCircle currentIndex circle
-
-        let destination =
-            findDestination circle.[currentIndex] circle'
-
-        let destinationIndex = List.findIndex ((=) destination) circle'
-
-        let circle'' =
-            circle'.[0..destinationIndex]
-            @ takeOut @ circle'.[destinationIndex + 1..]
-
-        let currentIndex' =
-            (List.findIndex ((=) circle.[currentIndex]) circle''
-             + 1) % circle''.Length
-
-        (circle'', currentIndex')
-
-    let rec play n currentIndex circle =
+    let rec play n (circle: LinkedList<int>) =
         if n = 0 then
             circle
         else
-            let circle', currentIndex' = move currentIndex circle
-            play (n - 1) currentIndex' circle'
+            if n % 1000 = 0 then printfn "%d" n
+            move circle
+            play (n - 1) circle
 
     let day23 () =
         let circle =
@@ -68,8 +61,25 @@ module Day23 =
                 for c in input do
                     yield Int32.Parse(string c)
             }
-            |> Seq.toList
+            |> LinkedList
 
-        let circle' = play 100 0 circle
+        play 100 circle |> ignore
+        let circle' = circle |> List.ofSeq
         let index1 = List.findIndex ((=) 1) circle'
         circle'.[index1 + 1..] @ circle'.[0..index1 - 1]
+
+    let day23Part2 () =
+        let smallCircle =
+            seq {
+                for c in input do
+                    yield Int32.Parse(string c)
+            }
+            |> Seq.toList
+        let circleToAppend = [(List.max smallCircle + 1) .. 1000000]
+        let circle = smallCircle @ circleToAppend |> LinkedList
+        play 10000000 circle |> ignore
+        let node1 = circle.Find(1)
+        let next = int64 node1.Next.Value
+        let nextNext = int64 node1.Next.Next.Value
+        printfn "%d %d" next nextNext
+        next * nextNext
